@@ -70,29 +70,40 @@ class Calculation:
             Logging.write_log(count, 'Неизвестная ошибка', err)
             return 'Неизвестная ошибка'
         else:
-            return Calculation.Result(count)
+            return Calculation.check_answer(count)
 
-    # Результирующий расчет курса
+    # Проверка на ответ от сервера
     @staticmethod
-    # Запись ответа от cryptocompare в request_json
-    def Result(count):
+    def check_answer(count):
         end_value_sheet = []
         for v in db.get_info(table='val_for_convert', col='currency'):
             end_value_sheet.append(*v)
-        url = 'https://min-api.cryptocompare.com/data/price?fsym={0}&tsyms={1}'
-        request = rq.get(url.format(end_value_sheet[0], end_value_sheet[1]))
-        request_json = request.json()
 
-        # Обработка ответа с ошибкой
-        if 'Response' in request_json.keys() and request_json['Response'] in 'Error':
-            Logging.write_log(count, 'Ошибка валют: {0} {1}'.format(end_value_sheet[0],
-                                                                    end_value_sheet[1]), request_json['Message'])
-            return 'Ошибка валют'
+        # Обработка ошибки API
+        try:
+            url = 'https://min-api.cryptocompare.com/data/price?fsym={0}&tsyms={1}'
+            request = rq.get(url.format(end_value_sheet[0], end_value_sheet[1]))
+
+            # Запись ответа от cryptocompare в request_json
+            request_json = request.json()
+        except Exception as err:
+            Logging.write_log(count, 'Ошибка API', err)
+            return 'Ошибка ответа сервера'
         else:
-            result = "{0} {1} = {2} {3}".format(count.text, end_value_sheet[0],
-                                                request_json[end_value_sheet[1]] * float(count.text),
-                                                end_value_sheet[1])
-            return result
+
+            # Обработка ответа с ошибкой
+            if 'Response' in request_json.keys() and request_json['Response'] in 'Error':
+                Logging.write_log(count, 'Ошибка валют: {0} {1}'.format(end_value_sheet[0],
+                                                                        end_value_sheet[1]), request_json['Message'])
+                return 'Ошибка валют'
+            else:
+                return Calculation.Result(count, end_value_sheet[0], end_value_sheet[1], request_json)
+
+        # Результирующий расчет курса
+    @staticmethod
+    def Result(count, end_v_0, end_v_1, rq_j):
+        result = "{0} {1} = {2} {3}".format(count.text, end_v_0, rq_j[end_v_1] * float(count.text), end_v_1)
+        return result
 
 
 # Класс для работы со списком валют
