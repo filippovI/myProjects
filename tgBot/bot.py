@@ -63,6 +63,16 @@ def get_logs(msg):
         bot.send_message(msg.chat.id, ut.Logging.get_logs())
     else:
         bot.send_message(msg.chat.id, "У вас нет прав 😔")
+        
+
+# Команда для получения логов в xls формате  
+@bot.message_handler(commands=['get_logs_xls'])
+def get_logs(msg):
+    ut.Editor.del_buttons_text(msg)
+    if msg.from_user.id in cfg.admin_list:
+        ut.Logging.get_logs_xls(msg)
+    else:
+        bot.send_message(msg.chat.id, "У вас нет прав 😔")
 
 
 # Команда для очистки таблиц через Telegram (использовать аккуратно обработку ошибок не делал)

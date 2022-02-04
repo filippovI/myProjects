@@ -100,4 +100,10 @@ def delete_table(db, table: str, admin=False, msg=None):
         ut.Logging.write_log(msg, 'Ошибка удаление из таблицы {0}'.format(table), err)
 
 
+@db_connection
+def get_col_name(db, table: str):
+    sql = db.cursor()
+    sql.execute("""PRAGMA table_info({0})""".format(table))
+    return sql.fetchall()
+
 init_db()

@@ -2,6 +2,7 @@ import telebot as tb
 import db
 import config as cfg
 import requests as rq
+import openpyxl
 from datetime import datetime as dt
 
 bot = tb.TeleBot(cfg.token)
@@ -179,3 +180,29 @@ class Logging:
                 text = ''.join((text, str(v) + ' | '))
             text += '\n\n'
         return text if text else 'Логов нет'
+        
+    # Формирование xls файла с логами
+    @staticmethod
+    def get_logs_xls(msg):
+        alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        file_name = 'logs.xlsx'
+        try:
+            book = openpyxl.Workbook()
+
+            sheet = book.active
+            for i, v in enumerate(db.get_col_name(table='logs')):
+                sheet['{0}1'.format(alphabet[i])] = v[1].upper()
+
+            for i, v in enumerate(db.get_info(table='logs', col='id, time, error_handled, error, user')):
+                sheet[i + 2][0].value = v[0]
+                sheet[i + 2][1].value = v[1]
+                sheet[i + 2][2].value = v[2]
+                sheet[i + 2][3].value = v[3]
+                sheet[i + 2][4].value = v[4]
+
+            book.save(file_name)
+            book.close()
+        except Exception as err:
+            bot.send_message(msg.chat.id, 'Ошбика формирования {0}'.format(err))
+        else:
+            bot.send_message(msg.chat.id, 'Сформирован файл {0}'.format(file_name))
